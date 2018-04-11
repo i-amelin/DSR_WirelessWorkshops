@@ -130,7 +130,6 @@ static void send_data(zb_uint8_t param, char *message)
   req->profileid = 2;
   req->src_endpoint = 10;
   req->dst_endpoint = 10;
-
   buf->u.hdr.handle = 0x11;
 
   for (i = 0; i < message_length; ++i)
@@ -159,7 +158,7 @@ void zr_toggle_bulb(zb_uint8_t param) {
 
 void zr_set_level(zb_uint8_t param) {
     zb_buf_t *buf = (zb_buf_t *)ZB_BUF_FROM_REF(param);
-    uint8_t level = ZB_GET_BUF_PARAM(buf, uint8_t);
+    uint8_t level = (uint8_t)ZB_GET_BUF_PARAM(buf, uint8_t);
     char cmd[2] = { SET_LEVEL, level };
     send_data(param, cmd);
 }

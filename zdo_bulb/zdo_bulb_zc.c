@@ -6,8 +6,6 @@
 #include "zb_zdo.h"
 #include <string.h>
 
-#define ZB_TEST_DUMMY_DATA_SIZE 10
-
 zb_ieee_addr_t g_zc_addr = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
 
 #ifndef ZB_COORDINATOR_ROLE
@@ -24,7 +22,7 @@ zb_ieee_addr_t g_zc_addr = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
 #define LEVEL_STEP 10
 
 typedef enum {
-    ON_BULB = 2,
+    ON_BULB = 1,
     OFF_BULB,
     TOGGLE_BULB,
     SET_LEVEL,
@@ -35,7 +33,6 @@ typedef enum {
 uint8_t is_bulb_lighting;
 uint8_t lighting_level;
 
-static void zc_send_data(zb_buf_t *buf, zb_uint16_t addr, char *message);
 void data_indication(zb_uint8_t param) ZB_CALLBACK;
 
 void zc_on_bulb();
@@ -112,7 +109,7 @@ void data_indication(zb_uint8_t param) ZB_CALLBACK
   uint8_t new_level;
   zb_uint8_t *ptr;
   zb_buf_t *asdu = (zb_buf_t *)ZB_BUF_FROM_REF(param);
-  zb_apsde_data_indication_t *ind = ZB_GET_BUF_PARAM(asdu, zb_apsde_data_indication_t);
+  
   command command_id;
   uint8_t i;
 
@@ -122,8 +119,6 @@ void data_indication(zb_uint8_t param) ZB_CALLBACK
   TRACE_MSG(TRACE_APS3, "apsde_data_indication: packet %p len %d handle 0x%x", (FMT__P_D_D,
                          asdu, (int)ZB_BUF_LEN(asdu), asdu->u.hdr.status));
 
-  /* send packet back to ZR */
-  /*zc_send_data(asdu, ind->src_addr);*/
   TRACE_MSG(TRACE_APS3, "The packet contains the following data:", (FMT__0));
   for (i = 0; i < ZB_BUF_LEN(asdu); i++) {
       TRACE_MSG(TRACE_APS3, "%d", (FMT__D, (int)ptr[i]));
@@ -132,10 +127,10 @@ void data_indication(zb_uint8_t param) ZB_CALLBACK
   command_id = ptr[0];
   switch (command_id) {
       case ON_BULB:
-          zc_off_bulb();
+          zc_on_bulb();
           break;
       case OFF_BULB:
-          zc_on_bulb();
+          zc_off_bulb();
           break;
       case TOGGLE_BULB:
           zc_toggle_bulb();
@@ -157,31 +152,6 @@ void data_indication(zb_uint8_t param) ZB_CALLBACK
   zb_free_buf(asdu);
 }
 
-static void zc_send_data(zb_buf_t *buf, zb_uint16_t addr, char *message)
-{
-    zb_apsde_data_req_t *req;
-    zb_uint8_t *ptr = NULL;
-    zb_short_t i;
-    int message_length = strlen(message);
-
-    ZB_BUF_INITIAL_ALLOC(buf, message_length, ptr);
-    req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
-    req->dst_addr.addr_short = addr; /* send to ZR */
-    req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
-    req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
-    req->radius = 1;
-    req->profileid = 2;
-    req->src_endpoint = 10;
-    req->dst_endpoint = 10;
-    buf->u.hdr.handle = 0x11;
-    for (i = 0 ; i < message_length; i++)
-    {
-      ptr[i] = message[i];
-    }
-    TRACE_MSG(TRACE_APS3, "Sending apsde_data.request", (FMT__0));
-    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, ZB_REF_FROM_BUF(buf));
-}
-
 void zc_on_bulb() {
     is_bulb_lighting = 1;
     TRACE_MSG(TRACE_APS3, "Bulb is on", (FMT__0));
@@ -198,7 +168,7 @@ void zc_toggle_bulb() {
 }
 
 void zc_set_level(uint8_t level) {
-    if (level <= 100 && level >= 0) {
+    if (level <= 100) {
         lighting_level = level;
         TRACE_MSG(TRACE_APS3, "New level: %d", (FMT__D, level));
     } else {
