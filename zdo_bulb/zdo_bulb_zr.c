@@ -5,17 +5,9 @@
 #include "zb_aps.h"
 #include "zb_zdo.h"
 #include <string.h>
+#include "commands.h"
 
-typedef enum {
-    ON_BULB = 1,
-    OFF_BULB,
-    TOGGLE_BULB,
-    SET_LEVEL,
-    STEP_UP,
-    STEP_DOWN
-} command;
-
-static void send_data(zb_uint8_t param, char *message);
+static void send_data(zb_buf_t *buf);
 #ifndef APS_RETRANSMIT_TEST
 //void data_indication(zb_uint8_t param) ZB_CALLBACK;
 #endif
@@ -110,18 +102,9 @@ void zb_zdo_startup_complete(zb_uint8_t param) ZB_CALLBACK
   }
 }
 
-
-static void send_data(zb_uint8_t param, char *message)
+static void send_data(zb_buf_t *buf)
 {
   zb_apsde_data_req_t *req;
-  zb_uint8_t *ptr = NULL;
-  zb_short_t i;
-  zb_buf_t *buf = (zb_buf_t *)ZB_BUF_FROM_REF(param);
-  int message_length = strlen(message);
-
-  TRACE_MSG(TRACE_APS3, "Message length: %x", (FMT__D, message_length));
-
-  ZB_BUF_INITIAL_ALLOC(buf, message_length, ptr);
   req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
   req->dst_addr.addr_short = 0;
   req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -132,43 +115,58 @@ static void send_data(zb_uint8_t param, char *message)
   req->dst_endpoint = 10;
   buf->u.hdr.handle = 0x11;
 
-  for (i = 0; i < message_length; ++i)
-  {
-    ptr[i] = message[i];
-  }
   TRACE_MSG(TRACE_APS3, "Sending apsde_data.request", (FMT__0));
 
   ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, ZB_REF_FROM_BUF(buf));
 }
 
 void zr_on_bulb(zb_uint8_t param) {
-    char cmd[] = { ON_BULB };
-    send_data(param, cmd);
+    zb_buf_t *buf = (zb_buf_t *)ZB_BUF_FROM_REF(param);
+    zb_uint8_t *ptr = NULL;
+    ZB_BUF_INITIAL_ALLOC(buf, 1, ptr);
+    *ptr = ON_BULB;
+    send_data(buf);
 }
 
 void zr_off_bulb(zb_uint8_t param) {
-    char cmd[] = { OFF_BULB };
-    send_data(param, cmd);
+    zb_buf_t *buf = (zb_buf_t *)ZB_BUF_FROM_REF(param);
+    zb_uint8_t *ptr = NULL;
+    ZB_BUF_INITIAL_ALLOC(buf, 1, ptr);
+    *ptr = OFF_BULB;
+    send_data(buf);
 }
 
 void zr_toggle_bulb(zb_uint8_t param) {
-    char cmd[] = { TOGGLE_BULB };
-    send_data(param, cmd);
+    zb_buf_t *buf = (zb_buf_t *)ZB_BUF_FROM_REF(param);
+    zb_uint8_t *ptr = NULL;
+    ZB_BUF_INITIAL_ALLOC(buf, 1, ptr);
+    *ptr = TOGGLE_BULB;
+    send_data(buf);
 }
 
 void zr_set_level(zb_uint8_t param) {
     zb_buf_t *buf = (zb_buf_t *)ZB_BUF_FROM_REF(param);
-    uint8_t level = (uint8_t)ZB_GET_BUF_PARAM(buf, uint8_t);
-    char cmd[2] = { SET_LEVEL, level };
-    send_data(param, cmd);
+    uint8_t *level = (uint8_t *)ZB_GET_BUF_PARAM(buf, uint8_t);
+
+    zb_uint8_t *ptr = NULL;
+    ZB_BUF_INITIAL_ALLOC(buf, 2, ptr);
+    ptr[0] = SET_LEVEL;
+    ptr[1] = *level;
+    send_data(buf);
 }
 
 void zr_step_up(zb_uint8_t param) {
-    char cmd[] = { STEP_UP };
-    send_data(param, cmd);
+    zb_buf_t *buf = (zb_buf_t *)ZB_BUF_FROM_REF(param);
+    zb_uint8_t *ptr = NULL;
+    ZB_BUF_INITIAL_ALLOC(buf, 1, ptr);
+    *ptr = STEP_UP;
+    send_data(buf);
 }
 
 void zr_step_down(zb_uint8_t param) {
-    char cmd[] = { STEP_DOWN };
-    send_data(param, cmd);
+    zb_buf_t *buf = (zb_buf_t *)ZB_BUF_FROM_REF(param);
+    zb_uint8_t *ptr = NULL;
+    ZB_BUF_INITIAL_ALLOC(buf, 1, ptr);
+    *ptr = STEP_DOWN;
+    send_data(buf);
 }

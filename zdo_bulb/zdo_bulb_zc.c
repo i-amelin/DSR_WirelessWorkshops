@@ -5,6 +5,7 @@
 #include "zb_aps.h"
 #include "zb_zdo.h"
 #include <string.h>
+#include "commands.h"
 
 zb_ieee_addr_t g_zc_addr = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
 
@@ -20,15 +21,6 @@ zb_ieee_addr_t g_zc_addr = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
 
 #define MAX_LEVEL 100
 #define LEVEL_STEP 10
-
-typedef enum {
-    ON_BULB = 1,
-    OFF_BULB,
-    TOGGLE_BULB,
-    SET_LEVEL,
-    STEP_UP,
-    STEP_DOWN
-} command;
 
 uint8_t is_bulb_lighting;
 uint8_t lighting_level;
